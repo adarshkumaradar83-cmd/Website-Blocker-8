@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mastermind Enterprise | Advanced Multi-Node Swarm v5.0</title>
+    <style>
+        :root {
+            --bg-color: #020617;
+            --panel-bg: #0f172a;
+            --border-color: #1e293b;
+            --accent-blue: #3b82f6;
+            --accent-green: #22c55e;
+            --accent-red: #ef4444;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+        body {
+            font-family: 'Segoe UI', monospace, sans-serif;
+            background: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+        }
+        .header {
+            background: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .control-panel {
+            background: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            padding: 20px;
+            border-radius: 12px;
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+            align-items: center;
+        }
+        input[type="text"], select {
+            background: #020617;
+            border: 1px solid var(--border-color);
+            color: #fff;
+            padding: 12px;
+            border-radius: 8px;
+            outline: none;
+        }
+        input[type="text"] { flex: 2; min-width: 250px; }
+        
+        button {
+            padding: 12px 20px;
+            font-weight: bold;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        .btn-add { background: var(--accent-blue); color: #fff; }
+        .btn-refresh { background: var(--accent-green); color: #fff; }
+        .btn-clear { background: var(--accent-red); color: #fff; }
+        button:hover { opacity: 0.85; }
+
+        .metrics-bar {
+            display: flex;
+            gap: 20px;
+            font-size: 13px;
+            color: var(--text-muted);
+            background: rgba(2, 6, 23, 0.6);
+            padding: 10px 15px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            margin-bottom: 20px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 15px;
+        }
+        .node-card {
+            background: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        .node-header {
+            background: #1e293b;
+            padding: 8px 12px;
+            font-size: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .status-tag {
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-weight: bold;
+        }
+        .status-idle { background: #334155; color: #94a3b8; }
+        .status-loading { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
+        .status-success { background: rgba(34, 197, 94, 0.2); color: #4ade80; }
+        
+        .node-frame {
+            width: 100%;
+            height: 180px;
+            border: none;
+            background: #fff;
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div>
+        <h2 style="margin:0; color: var(--accent-blue);">⚡ Mastermind Enterprise | Swarm Node Controller v5.0</h2>
+        <span style="font-size: 12px; color: var(--text-muted);">High-Density Concurrent Multi-Page Monitoring Terminal</span>
+    </div>
+</div>
+
+<div class="control-panel">
+    <input type="text" id="targetUrl" placeholder="Enter Target Base URL (e.g. https://example.com)">
+    
+    <select id="nodeCount">
+        <option value="10">10 Nodes</option>
+        <option value="30">30 Nodes</option>
+        <option value="50">50 Nodes</option>
+        <option value="100" selected>100 Nodes (Max Density)</option>
+    </select>
+
+    <button class="btn-add" onclick="generateNodes()">Generate Swarm</button>
+    <button class="btn-refresh" onclick="refreshAllNodes()">🔄 Instant Refresh All</button>
+    <button class="btn-clear" onclick="clearSwarm()">Clear Grid</button>
+</div>
+
+<div class="metrics-bar">
+    <div>Total Active Nodes: <strong id="totalNodes" style="color:#fff;">0</strong> / 100</div>
+    <div>System Status: <strong id="sysStatus" style="color: var(--accent-green);">Ready</strong></div>
+    <div>Last Global Sync: <strong id="lastSync" style="color:#fff;">Never</strong></div>
+</div>
+
+<div class="grid" id="swarmGrid">
+    <!-- Dynamic Nodes Generated Here -->
+</div>
+
+<script>
+    let nodeStore = [];
+    let refreshTimeoutId = null;
+
+    // Helper: Safely get and parse URL
+    function validateAndParseUrl(inputUrl) {
+        if (!inputUrl) return null;
+        let urlString = inputUrl.trim();
+        
+        if (!urlString.startsWith('http://') && !urlString.startsWith('https://')) {
+            urlString = 'https://' + urlString;
+        }
+
+        try {
+            const parsed = new URL(urlString);
+            if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+                return parsed.href;
+            }
+        } catch (e) {
+            return null;
+        }
+        return null;
+    }
+
+    function generateNodes() {
+        const grid = document.getElementById('swarmGrid');
+        const urlInput = document.getElementById('targetUrl');
+        const countSelect = document.getElementById('nodeCount');
+        const totalNodesElem = document.getElementById('totalNodes');
+        const sysStatusElem = document.getElementById('sysStatus');
+        const lastSyncElem = document.getElementById('lastSync');
+
+        if (!grid || !urlInput || !countSelect) return;
+
+        const rawUrl = urlInput.value;
+        const validUrl = validateAndParseUrl(rawUrl);
+
+        if (!validUrl) {
+            alert('Please enter a valid HTTP or HTTPS URL.');
+            return;
+        }
+
+        // 3. Clear existing nodes securely before re-generating
+        clearSwarm();
+
+        const count = parseInt(countSelect.value) || 10;
+
+        for (let i = 1; i <= count; i++) {
+            const card = document.createElement('div');
+            card.className = 'node-card';
+
+            const header = document.createElement('div');
+            header.className = 'node-header';
+
+            const titleSpan = document.createElement('span');
+            titleSpan.innerText = `Node #${i}`;
+
+            const tagSpan = document.createElement('span');
+            tagSpan.className = 'status-tag status-loading';
+            tagSpan.id = `tag-${i}`;
+            tagSpan.innerText = 'Loading...';
+
+            header.appendChild(titleSpan);
+            header.appendChild(tagSpan);
+
+            // 1. Safe Iframe creation without innerHTML URL injection
+            const iframe = document.createElement('iframe');
+            iframe.className = 'node-frame';
+            iframe.id = `frame-${i}`;
+            
+            const separator = validUrl.includes('?') ? '&' : '?';
+            const finalUrl = `${validUrl}${separator}node_id=${i}&t=${Date.now()}`;
+            
+            // Set URL safely via property
+            iframe.src = finalUrl;
+            
+            // 7. Honest status tracking
+            iframe.onload = function() {
+                onNodeLoaded(i);
+            };
+
+            card.appendChild(header);
+            card.appendChild(iframe);
+            grid.appendChild(card);
+
+            nodeStore.push({ id: i, base: validUrl });
+        }
+
+        if (totalNodesElem) totalNodesElem.innerText = count;
+        if (lastSyncElem) lastSyncElem.innerText = new Date().toLocaleTimeString();
+        if (sysStatusElem) sysStatusElem.innerText = 'Swarm Deployed';
+    }
+
+    // 4. Safe Refresh All
+    function refreshAllNodes() {
+        const sysStatusElem = document.getElementById('sysStatus');
+        const lastSyncElem = document.getElementById('lastSync');
+
+        if (!nodeStore || nodeStore.length === 0) {
+            alert('Deploy nodes first!');
+            return;
+        }
+
+        if (sysStatusElem) sysStatusElem.innerText = 'Refreshing All Nodes...';
+        
+        // 6. Clear previous status timeouts
+        if (refreshTimeoutId) {
+            clearTimeout(refreshTimeoutId);
+            refreshTimeoutId = null;
+        }
+
+        nodeStore.forEach(node => {
+            const frame = document.getElementById(`frame-${node.id}`);
+            const tag = document.getElementById(`tag-${node.id}`);
+            
+            if (frame) {
+                if (tag) {
+                    tag.className = 'status-tag status-loading';
+                    tag.innerText = 'Reloading...';
+                }
+                
+                const separator = node.base.includes('?') ? '&' : '?';
+                const newUrl = `${node.base}${separator}node_id=${node.id}&t=${Date.now()}`;
+                frame.src = newUrl;
+            }
+        });
+
+        if (lastSyncElem) lastSyncElem.innerText = new Date().toLocaleTimeString();
+        
+        refreshTimeoutId = setTimeout(() => {
+            if (sysStatusElem && nodeStore.length > 0) {
+                sysStatusElem.innerText = 'All Nodes Synced';
+            }
+        }, 1000);
+    }
+
+    // 7. Frame navigation status
+    function onNodeLoaded(id) {
+        const tag = document.getElementById(`tag-${id}`);
+        if (tag) {
+            tag.className = 'status-tag status-success';
+            tag.innerText = 'Loaded';
+        }
+    }
+
+    // 5. Complete state reset
+    function clearSwarm() {
+        const grid = document.getElementById('swarmGrid');
+        const totalNodesElem = document.getElementById('totalNodes');
+        const sysStatusElem = document.getElementById('sysStatus');
+        const lastSyncElem = document.getElementById('lastSync');
+
+        if (refreshTimeoutId) {
+            clearTimeout(refreshTimeoutId);
+            refreshTimeoutId = null;
+        }
+
+        if (grid) grid.innerHTML = '';
+        
+        nodeStore = [];
+        
+        if (totalNodesElem) totalNodesElem.innerText = '0';
+        if (sysStatusElem) sysStatusElem.innerText = 'Idle';
+        if (lastSyncElem) lastSyncElem.innerText = 'Never';
+    }
+</script>
+
+</body>
+                          </html>
+                          
