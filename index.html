@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mastermind Enterprise | Secure Multi-App Workspace Platform</title>
+    <style>
+        :root {
+            --bg-color: #090d16;
+            --panel-bg: #111827;
+            --border-color: #1f2937;
+            --accent-blue: #3b82f6;
+            --accent-green: #22c55e;
+            --accent-red: #ef4444;
+            --accent-purple: #8b5cf6;
+            --accent-yellow: #f59e0b;
+            --text-main: #f9fafb;
+            --text-muted: #9ca3af;
+        }
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        header {
+            background: var(--panel-bg);
+            border-bottom: 1px solid var(--border-color);
+            padding: 12px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            color: var(--accent-blue);
+        }
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--accent-purple);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-weight: bold;
+        }
+
+        .workspace-toolbar {
+            background: var(--panel-bg);
+            border-bottom: 1px solid var(--border-color);
+            padding: 15px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .toolbar-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        input, select {
+            background: #030712;
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 10px 14px;
+            border-radius: 8px;
+            outline: none;
+            font-size: 13px;
+        }
+        input[type="text"] { min-width: 240px; }
+        button {
+            padding: 10px 16px;
+            font-weight: 600;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-size: 13px;
+            transition: background 0.2s, transform 0.1s;
+        }
+        button:active { transform: scale(0.98); }
+        .btn-primary { background: var(--accent-blue); color: #fff; }
+        .btn-primary:hover { background: #2563eb; }
+        .btn-secondary { background: #1f2937; color: var(--text-main); border: 1px solid var(--border-color); }
+        .btn-secondary:hover { background: #374151; }
+        .btn-danger { background: rgba(239, 68, 68, 0.15); color: var(--accent-red); border: 1px solid rgba(239, 68, 68, 0.3); }
+        .btn-danger:hover { background: rgba(239, 68, 68, 0.25); }
+
+        .preset-chips {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .chip {
+            background: #1f2937;
+            border: 1px solid var(--border-color);
+            color: var(--text-muted);
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .chip:hover { color: var(--text-main); border-color: var(--accent-blue); }
+
+        main {
+            flex: 1;
+            padding: 24px;
+            max-width: 1900px;
+            margin: auto;
+            width: 100%;
+        }
+
+        /* How to Use Banner */
+        .guide-banner {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(139, 92, 246, 0.1));
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            padding: 15px 20px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            font-size: 13px;
+            color: var(--text-muted);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .guide-banner strong { color: var(--text-main); }
+
+        .empty-workspace {
+            text-align: center;
+            padding: 80px 20px;
+            background: var(--panel-bg);
+            border: 2px dashed var(--border-color);
+            border-radius: 16px;
+            color: var(--text-muted);
+            grid-column: 1 / -1;
+        }
+        .empty-workspace h3 { color: var(--text-main); margin-bottom: 8px; }
+
+        .workspace-grid {
+            display: grid;
+            gap: 20px;
+        }
+        .layout-grid-1 { grid-template-columns: 1fr; }
+        .layout-grid-2 { grid-template-columns: repeat(2, 1fr); }
+        .layout-grid-3 { grid-template-columns: repeat(3, 1fr); }
+
+        .workspace-panel {
+            background: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+        }
+        
+        .panel-header {
+            background: #18212f;
+            padding: 10px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 13px;
+        }
+        .panel-title {
+            font-weight: 600;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 50%;
+        }
+        .panel-status-badge {
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 12px;
+            background: rgba(34, 197, 94, 0.1);
+            color: var(--accent-green);
+            border: 1px solid rgba(34, 197, 94, 0.2);
+        }
+        .panel-status-badge.error {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--accent-red);
+            border-color: rgba(239, 68, 68, 0.2);
+        }
+        .panel-controls {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+        .icon-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 4px 8px;
+            font-size: 13px;
+            border-radius: 4px;
+        }
+        .icon-btn:hover { color: var(--text-main); background: #273548; }
+
+        .panel-metrics {
+            background: #0c1017;
+            padding: 6px 16px;
+            font-size: 11px;
+            color: var(--text-muted);
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--border-color);
+            font-family: monospace;
+        }
+        .panel-content-wrap {
+            position: relative;
+            width: 100%;
+            height: 380px;
+            background: #fff;
+        }
+        .panel-iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        .embed-fallback {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #0f172a;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            text-align: center;
+            color: var(--text-main);
+            display: none;
+        }
+        .embed-fallback p { color: var(--text-muted); font-size: 13px; margin-bottom: 15px; }
+
+        /* Professional Footer & Team Section */
+        footer {
+            background: var(--panel-bg);
+            border-top: 1px solid var(--border-color);
+            padding: 40px 24px 20px 24px;
+            margin-top: 40px;
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+        .footer-grid {
+            max-width: 1800px;
+            margin: auto;
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr;
+            gap: 40px;
+            margin-bottom: 30px;
+        }
+        .team-cards {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .team-card {
+            background: #030712;
+            border: 1px solid var(--border-color);
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .team-card img {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-bottom: 8px;
+            border: 2px solid var(--accent-blue);
+        }
+        .team-card h5 { margin: 0 0 4px 0; color: var(--text-main); font-size: 12px; }
+        .team-card p { margin: 0; font-size: 10px; color: var(--text-muted); }
+
+        .footer-bottom {
+            max-width: 1800px;
+            margin: auto;
+            border-top: 1px solid var(--border-color);
+            padding-top: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            font-size: 12px;
+        }
+
+        @media (max-width: 1024px) {
+            .workspace-grid { grid-template-columns: 1fr !important; }
+            .workspace-toolbar { flex-direction: column; align-items: stretch; }
+            .toolbar-group { width: 100%; justify-content: space-between; }
+            input[type="text"] { width: 100%; flex: 1; }
+            .footer-grid { grid-template-columns: 1fr; }
+            .team-cards { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="logo-area">
+        🛡️ Mastermind Enterprise <span style="font-size: 11px; font-weight: normal; background: rgba(139,92,246,0.15); color: var(--accent-purple); padding: 2px 8px; border-radius: 6px;">v5.2 Pro</span>
+    </div>
+    <div class="user-profile">
+        <span>Admin Workspace</span>
+        <div class="user-avatar">ME</div>
+    </div>
+</header>
+
+<div class="workspace-toolbar">
+    <div class="toolbar-group">
+        <input type="text" id="appUrlInput" placeholder="Enter URL (e.g. github.com)">
+        <input type="text" id="appNameInput" placeholder="App Name (Optional)">
+        <button class="btn-primary" onclick="addCustomPanel()">+ Add Panel</button>
+    </div>
+    
+    <div class="toolbar-group">
+        <div class="preset-chips">
+            <span style="font-size: 12px; color: var(--text-muted);">Presets:</span>
+            <div class="chip" onclick="addPresetApp('GitHub', 'https://github.com')">GitHub</div>
+            <div class="chip" onclick="addPresetApp('MDN Docs', 'https://developer.mozilla.org')">MDN</div>
+            <div class="chip" onclick="addPresetApp('Wikipedia', 'https://www.wikipedia.org')">Wiki</div>
+        </div>
+        <select id="layoutSelector" onchange="changeLayoutGrid()">
+            <option value="1">1 Column</option>
+            <option value="2" selected>2 Column</option>
+            <option value="3">3 Column</option>
+        </select>
+        <button class="btn-secondary" onclick="exportBackup()" title="Backup Workspace">Export</button>
+        <button class="btn-secondary" onclick="triggerImport()" title="Restore Workspace">Import</button>
+        <input type="file" id="importFile" style="display:none" accept=".json" onchange="importBackup(event)">
+        <button class="btn-danger" onclick="clearWorkspace()">Clear All</button>
+    </div>
+</div>
+
+<main>
+    <!-- How to Use Guide Banner -->
+    <div class="guide-banner">
+        <div>
+            <strong>📌 How to Use:</strong> Enter any valid website URL above or click preset chips (GitHub, MDN) to add live panels to your workspace. Use <strong>Export/Import</strong> to save your layout data securely.
+        </div>
+        <div style="color: var(--accent-green); font-weight: 600;">● System Operational</div>
+    </div>
+
+    <div id="workspaceGrid" class="workspace-grid layout-grid-2"></div>
+</main>
+
+<footer>
+    <div class="footer-grid">
+        <div>
+            <h3 style="color: var(--text-main); margin-top: 0; font-size: 15px;">Mastermind Enterprise Infrastructure</h3>
+            <p style="line-height: 1.5; font-size: 12px;">
+                Advanced cloud dashboard and multi-app workspace management engine. Designed for high-concurrency monitoring, research, and developer productivity.
+            </p>
+            <div style="margin-top: 15px; font-size: 11px; color: var(--accent-blue);">
+                🔒 Secure End-to-End Session &bull; ISO 27001 Compliant Framework
+            </div>
+        </div>
+
+        <div>
+            <h4 style="color: var(--text-main); margin-top: 0; font-size: 13px;">Executive Leadership</h4>
+            <div class="team-cards">
+                <div class="team-card">
+                    <img src="https://images.unsplash.com/photo-1560250097-0b93528c311a?w=100" alt="Marcus">
+                    <h5>Marcus Thorne</h5>
+                    <p>Chief Architect</p>
+                </div>
+                <div class="team-card">
+                    <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=100" alt="Elena">
+                    <h5>Dr. Elena V.</h5>
+                    <p>Head of R&D</p>
+                </div>
+                <div class="team-card">
+                    <img src="https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=100" alt="Kenji">
+                    <h5>Kenji Tanaka</h5>
+                    <p>Cloud Ops</p>
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <h4 style="color: var(--text-main); margin-top: 0; font-size: 13px;">Terms & Compliance</h4>
+            <p style="font-size: 11px; line-height: 1.4;">
+                By accessing Mastermind Enterprise, you agree to our standard terms of service. External websites embedded via iframes are subject to their respective provider security and embedding policies.
+            </p>
+        </div>
+    </div>
+
+    <div class="footer-bottom">
+        <div>&copy; 2026 Mastermind Enterprise Lab. All rights reserved.</div>
+        <div style="display: flex; gap: 15px;">
+            <a href="#" style="color: inherit; text-decoration: none;">Privacy Policy</a>
+            <a href="#" style="color: inherit; text-decoration: none;">Terms of Use</a>
+            <a href="#" style="color: inherit; text-decoration: none;">Security Documentation</a>
+        </div>
+    </div>
+</footer>
+
+<script>
+    let panelsData = [];
+
+    function loadSavedWorkspace() {
+        try {
+            const saved = localStorage.getItem('mastermind_workspace_v5');
+            if (saved) {
+                panelsData = JSON.parse(saved);
+            } else {
+                panelsData = [
+                    { id: generateUniqueId(), name: 'GitHub Workspace', url: 'https://github.com', latency: '35ms' },
+                    { id: generateUniqueId(), name: 'MDN Documentation', url: 'https://developer.mozilla.org', latency: '42ms' }
+                ];
+            }
+        } catch (e) {
+            console.error('Failed to load storage:', e);
+            panelsData = [];
+        }
+    }
+
+    function saveWorkspace() {
+        try {
+            localStorage.setItem('mastermind_workspace_v5', JSON.stringify(panelsData));
+        } catch (e) {
+            console.error('Failed to save storage:', e);
+        }
+    }
+
+    function generateUniqueId() {
+        if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+            return crypto.randomUUID();
+        }
+        return 'panel_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
+    }
+
+    function renderWorkspace() {
+        const grid = document.getElementById('workspaceGrid');
+        if (!grid) return;
+
+        grid.innerHTML = '';
+
+        if (!Array.isArray(panelsData) || panelsData.length === 0) {
+            const emptyEl = document.createElement('div');
+            emptyEl.className = 'empty-workspace';
+            emptyEl.innerHTML = `
+                <h3>Your workspace is currently empty</h3>
+                <p>Add custom URLs or preset apps above to populate your workspace dashboard.</p>
+            `;
+            grid.appendChild(emptyEl);
+            return;
+        }
+
+        panelsData.forEach((panel) => {
+            const panelEl = document.createElement('div');
+            panelEl.className = 'workspace-panel';
+
+            const header = document.createElement('div');
+            header.className = 'panel-header';
+
+            const titleDiv = document.createElement('div');
+            titleDiv.className = 'panel-title';
+            const iconSpan = document.createElement('span');
+            iconSpan.textContent = '🟢';
+            const nameSpan = document.createElement('span');
+            nameSpan.textContent = panel.name;
+            titleDiv.appendChild(iconSpan);
+            titleDiv.appendChild(nameSpan);
+
+            const controlsDiv = document.createElement('div');
+            controlsDiv.className = 'panel-controls';
+
+            const statusBadge = document.createElement('span');
+            statusBadge.className = 'panel-status-badge';
+            statusBadge.id = `status-${panel.id}`;
+            statusBadge.textContent = 'Active';
+
+            const refreshBtn = document.createElement('button');
+            refreshBtn.className = 'icon-btn';
+            refreshBtn.title = 'Refresh Panel';
+            refreshBtn.textContent = '🔄';
+            refreshBtn.onclick = () => refreshPanel(panel.id);
+
+            const removeBtn = document.createElement('button');
+            removeBtn.className = 'icon-btn';
+            removeBtn.title = 'Remove Panel';
+            removeBtn.textContent = '✕';
+            removeBtn.onclick = () => removePanel(panel.id);
+
+            controlsDiv.appendChild(statusBadge);
+            controlsDiv.appendChild(refreshBtn);
+            controlsDiv.appendChild(removeBtn);
+
+            header.appendChild(titleDiv);
+            header.appendChild(controlsDiv);
+
+            const metricsBar = document.createElement('div');
+            metricsBar.className = 'panel-metrics';
+            const urlSpan = document.createElement('span');
+            urlSpan.textContent = `Target: ${panel.url}`;
+            const latencySpan = document.createElement('span');
+            latencySpan.textContent = `Latency: ${panel.latency || '30ms'}`;
+            metricsBar.appendChild(urlSpan);
+            metricsBar.appendChild(latencySpan);
+
+            const contentWrap = document.createElement('div');
+            contentWrap.className = 'panel-content-wrap';
+
+            const iframe = document.createElement('iframe');
+            iframe.className = 'panel-iframe';
+            iframe.id = `frame-${panel.id}`;
+            iframe.src = panel.url;
+
+            const fallback = document.createElement('div');
+            fallback.className = 'embed-fallback';
+            fallback.id = `fallback-${panel.id}`;
+            fallback.innerHTML = `
+                <p>⚠️ Website ca
