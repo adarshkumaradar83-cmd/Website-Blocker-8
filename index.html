@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mastermind Enterprise | Secure Workspace</title>
+    <style>
+        :root {
+            --bg-color: #090d16;
+            --panel-bg: #111827;
+            --border-color: #1f2937;
+            --accent-blue: #3b82f6;
+            --accent-green: #22c55e;
+            --accent-red: #ef4444;
+            --text-main: #f9fafb;
+            --text-muted: #9ca3af;
+        }
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        header {
+            background: var(--panel-bg);
+            border-bottom: 1px solid var(--border-color);
+            padding: 12px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            color: var(--accent-blue);
+        }
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--accent-blue);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-weight: bold;
+        }
+
+        .workspace-toolbar {
+            background: var(--panel-bg);
+            border-bottom: 1px solid var(--border-color);
+            padding: 15px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .toolbar-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        input, select {
+            background: #030712;
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 10px 14px;
+            border-radius: 8px;
+            outline: none;
+            font-size: 13px;
+        }
+        input[type="text"] { min-width: 240px; }
+        button {
+            padding: 10px 16px;
+            font-weight: 600;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-size: 13px;
+            transition: background 0.2s, transform 0.1s;
+        }
+        button:active { transform: scale(0.98); }
+        .btn-primary { background: var(--accent-blue); color: #fff; }
+        .btn-primary:hover { background: #2563eb; }
+        .btn-secondary { background: #1f2937; color: var(--text-main); border: 1px solid var(--border-color); }
+        .btn-secondary:hover { background: #374151; }
+        .btn-danger { background: rgba(239, 68, 68, 0.15); color: var(--accent-red); border: 1px solid rgba(239, 68, 68, 0.3); }
+        .btn-danger:hover { background: rgba(239, 68, 68, 0.25); }
+
+        .preset-chips {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .chip {
+            background: #1f2937;
+            border: 1px solid var(--border-color);
+            color: var(--text-muted);
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .chip:hover { color: var(--text-main); border-color: var(--accent-blue); }
+
+        main {
+            flex: 1;
+            padding: 24px;
+            max-width: 1900px;
+            margin: auto;
+            width: 100%;
+        }
+
+        .empty-workspace {
+            text-align: center;
+            padding: 80px 20px;
+            background: var(--panel-bg);
+            border: 2px dashed var(--border-color);
+            border-radius: 16px;
+            color: var(--text-muted);
+            grid-column: 1 / -1;
+        }
+        .empty-workspace h3 { color: var(--text-main); margin-bottom: 8px; }
+
+        .workspace-grid {
+            display: grid;
+            gap: 20px;
+        }
+        .layout-grid-1 { grid-template-columns: 1fr; }
+        .layout-grid-2 { grid-template-columns: repeat(2, 1fr); }
+        .layout-grid-3 { grid-template-columns: repeat(3, 1fr); }
+
+        .workspace-panel {
+            background: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+        }
+        
+        .panel-header {
+            background: #18212f;
+            padding: 10px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 13px;
+        }
+        .panel-title {
+            font-weight: 600;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 50%;
+        }
+        .panel-status-badge {
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 12px;
+            background: rgba(34, 197, 94, 0.1);
+            color: var(--accent-green);
+            border: 1px solid rgba(34, 197, 94, 0.2);
+        }
+        .panel-status-badge.error {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--accent-red);
+            border-color: rgba(239, 68, 68, 0.2);
+        }
+        .panel-controls {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+        .icon-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 4px 8px;
+            font-size: 13px;
+            border-radius: 4px;
+        }
+        .icon-btn:hover { color: var(--text-main); background: #273548; }
+
+        .panel-metrics {
+            background: #0c1017;
+            padding: 6px 16px;
+            font-size: 11px;
+            color: var(--text-muted);
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--border-color);
+            font-family: monospace;
+        }
+        .panel-content-wrap {
+            position: relative;
+            width: 100%;
+            height: 380px;
+            background: #fff;
+        }
+        .panel-iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        .embed-fallback {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #0f172a;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            text-align: center;
+            color: var(--text-main);
+            display: none;
+        }
+        .embed-fallback p { color: var(--text-muted); font-size: 13px; margin-bottom: 15px; }
+
+        footer {
+            background: var(--panel-bg);
+            border-top: 1px solid var(--border-color);
+            padding: 20px 24px;
+            text-align: center;
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-top: auto;
+        }
+
+        @media (max-width: 1024px) {
+            .workspace-grid { grid-template-columns: 1fr !important; }
+            .workspace-toolbar { flex-direction: column; align-items: stretch; }
+            .toolbar-group { width: 100%; justify-content: space-between; }
+            input[type="text"] { width: 100%; flex: 1; }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="logo-area">
+        🛡️ Mastermind Enterprise Workspace
+    </div>
+    <div class="user-profile">
+        <span>Admin User</span>
+        <div class="user-avatar">ME</div>
+    </div>
+</header>
+
+<div class="workspace-toolbar">
+    <div class="toolbar-group">
+        <input type="text" id="appUrlInput" placeholder="Enter URL (required, e.g. github.com)" required>
+        <input type="text" id="appNameInput" placeholder="App Name (optional)">
+        <button id="addPanelBtn" class="btn-primary" type="button">+ Add Panel</button>
+    </div>
+    
+    <div class="toolbar-group">
+        <div class="preset-chips">
+            <span style="font-size: 12px; color: var(--text-muted);">Presets:</span>
+            <div class="chip" onclick="addPresetApp('GitHub', 'https://github.com')">GitHub</div>
+            <div class="chip" onclick="addPresetApp('MDN Docs', 'https://developer.mozilla.org')">MDN</div>
+            <div class="chip" onclick="addPresetApp('Wikipedia', 'https://www.wikipedia.org')">Wiki</div>
+        </div>
+        <select id="layoutSelector" onchange="changeLayoutGrid()">
+            <option value="1">1 Column</option>
+            <option value="2" selected>2 Column</option>
+            <option value="3">3 Column</option>
+        </select>
+        <button class="btn-secondary" onclick="exportBackup()" title="Backup Workspace">Export</button>
+        <button class="btn-secondary" onclick="triggerImport()" title="Restore Workspace">Import</button>
+        <input type="file" id="importFile" style="display:none" accept=".json">
+        <button class="btn-danger" onclick="clearWorkspace()">Clear All</button>
+    </div>
+</div>
+
+<main>
+    <div id="workspaceGrid" class="workspace-grid layout-grid-2"></div>
+</main>
+
+<footer>
+    Mastermind Enterprise Platform &bull; Secure Multi-App Workspace Engine
+</footer>
+
+<script>
+    let panelsData = [];
+
+    function generateUniqueId() {
+        return 'panel_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
+    }
+
+    function loadSavedWorkspace() {
+        try {
+            const saved = localStorage.getItem('mastermind_workspace_data');
+            if (saved) {
+                panelsData = JSON.parse(saved);
+            } else {
+                panelsData = [
+                    { id: generateUniqueId(), name: 'GitHub', url: 'https://github.com', latency: '28ms' },
+                    { id: generateUniqueId(), name: 'MDN Documentation', url: 'https://developer.mozilla.org', latency: '35ms' }
+                ];
+            }
+        } catch (e) {
+            console.error('Storage load error:', e);
+            panelsData = [];
+        }
+    }
+
+    function saveWorkspace() {
+        try {
+            localStorage.setItem('mastermind_workspace_data', JSON.stringify(panelsData));
+        } catch (e) {
+            console.error('Storage save error:', e);
+        }
+    }
+
+    function renderWorkspace() {
+        const grid = document.getElementById('workspaceGrid');
+        if (!grid) return;
+
+        grid.innerHTML = '';
+
+        if (!Array.isArray(panelsData) || panelsData.length === 0) {
+            const emptyEl = document.createElement('div');
+            emptyEl.className = 'empty-workspace';
+            emptyEl.innerHTML = `
+                <h3>Your workspace is currently empty</h3>
+                <p>Add custom URLs or preset apps above to populate your workspace dashboard.</p>
+            `;
+            grid.appendChild(emptyEl);
+            return;
+        }
+
+        panelsData.forEach((panel) => {
+            const panelEl = document.createElement('div');
+            panelEl.className = 'workspace-panel';
+
+            const header = document.createElement('div');
+            header.className = 'panel-header';
+
+            const titleDiv = document.createElement('div');
+            titleDiv.className = 'panel-title';
+            const iconSpan = document.createElement('span');
+            iconSpan.textContent = '🟢';
+            const nameSpan = document.createElement('span');
+            nameSpan.textContent = panel.name;
+            titleDiv.appendChild(iconSpan);
+            titleDiv.appendChild(nameSpan);
+
+            const controlsDiv = document.createElement('div');
+            controlsDiv.className = 'panel-controls';
+
+            const statusBadge = document.createElement('span');
+            statusBadge.className = 'panel-status-badge';
+            statusBadge.id = `status-${panel.id}`;
+            statusBadge.textContent = 'Active';
+
+            const refreshBtn = document.createElement('button');
+            refreshBtn.className = 'icon-btn';
+            refreshBtn.title = 'Refresh Panel';
+            refreshBtn.textContent = '🔄';
+            refreshBtn.onclick = function() { refreshPanel(panel.id); };
+
+            const removeBtn = document.createElement('button');
+            removeBtn.className = 'icon-btn';
+            removeBtn.title = 'Remove Panel';
+            removeBtn.textContent = '✕';
+            removeBtn.onclick = function() { removePanel(panel.id); };
+
+            controlsDiv.appendChild(statusBadge);
+            controlsDiv.appendChild(refreshBtn);
+            controlsDiv.appendChild(removeBtn);
+
+            header.appendChild(titleDiv);
+            header.appendChild(controlsDiv);
+
+            const metricsBar = document.createElement('div');
+            metricsBar.className = 'panel-metrics';
+            const urlSpan = document.createElement('span');
+            urlSpan.textContent = `Target: ${panel.url}`;
+            const latencySpan = document.createElement('span');
+            latencySpan.textContent = `Latency: ${panel.latency || '25ms'}`;
+            metricsBar.appendChild(urlSpan);
+            metricsBar.appendChild(latencySpan);
+
+            const contentWrap = document.createElement('div');
+            contentWrap.className = 'panel-content-wrap';
+
+            const iframe = document.createElement('iframe');
+            iframe.className = 'panel-iframe';
+            iframe.id = `frame-${panel.id}`;
+            iframe.src = panel.url;
+
+            const fallback = document.createElement('div');
+            fallback.className = 'embed-fallback';
+            fallback.id = `fallback-${panel.id}`;
+            fallback.innerHTML = `
+                <p>⚠️ Website cannot be embedded directly due to security restrictions.</p>
+                <a href="${panel.url}" target="_blank" class="btn-primary" style="text-decoration:none; padding:8px 16px; border-radius:6px; display:inline-block;">Open in New Tab</a>
+            `;
+
+            contentWrap.appendChild(iframe);
+            contentWrap.appendChild(fallback);
+
+            panelEl.appendChild(header);
+            panelEl.appendChild(metricsBar);
+            panelEl.appendChild(contentWrap);
+
+            grid.appendChild(panelEl);
+        });
+    }
+
+    function addCustomPanel() {
+        const urlInput = document.getElementById('appUrlInput');
+        const nameInput = document.getElementById('appNameInput');
+        
+        if (!urlInput) return;
+
+        let rawUrl = urlInput.value.trim();
+        let name = nameInput ? nameInput.value.trim() : '';
+
+        if (!rawUrl) {
+            alert('Please enter a valid URL.');
+            urlInput.focus();
+            return;
+        }
+
+        let validatedUrl = '';
+        try {
+            if (!rawUrl.startsWith('http://') && !rawUrl.startsWith('https://')) {
+                rawUrl = 'https://' + rawUrl;
+            }
+            const parsedObj = new URL(rawUrl);
+            validatedUrl = parsedObj.href;
+            if (!name) {
+                name = parsedObj.hostname;
+            }
+        } catch (e) {
+            alert('Invalid URL format entered.');
+            return;
+        }
+
+        const newPanel = {
+            id: generateUniqueId(),
+            name: name,
+            url: validatedUrl,
+            latency: Math.floor(Math.random() * 20 + 15) + 'ms'
+        };
+
+        panelsData.push(newPanel);
+        saveWorkspace();
+        
+        urlInput.value = '';
+        if (nameInput) nameInput.value = '';
+        renderWorkspace();
+    }
+
+    function addPresetApp(name, url) {
+        if (panelsData.some(p => p.url === url)) {
+            alert(`${name} is already in your workspace.`);
+            return;
+        }
+
+        panelsData.push({
+            id: generateUniqueId(),
+            name: name,
+            url: url,
+            latency: Math.floor(Math.random() * 20 + 15) + 'ms'
+        });
+        saveWorkspace();
+        renderWorkspace();
+    }
+
+    function removePanel(id) {
+        panelsData = panelsData.filter(function(p) { return p.id !== id; });
+        saveWorkspace();
+        renderWorkspace();
+    }
+
+    function refreshPanel(id) {
+        const iframe = document.getElementById(`frame-${id}`);
+        const fallback = document.getElementById(`fallback-${id}`);
+        if (fallback) fallback.style.display = 'none';
+        
+        if (iframe) {
+            const panel = panelsData.find(function(p) { return p.id === id; });
+            if (panel) {
+                const separator = panel.url.includes('?') ? '&' : '?';
+                iframe.src = panel.url + separator + '_t=' + Date.now();
+            }
+        }
+    }
+
+    function clearWorkspace() {
+        if (confirm('Do you want to clear your workspace?')) {
+            panelsData = [];
+            saveWorkspace();
+            renderWorkspace();
+        }
+    }
+
+    function exportBackup() {
+        try {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(panelsData, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `mastermind_workspace_backup_${Date.now()}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+        } catch (e) {
+            alert('Failed to export backup.');
+        }
+    }
+
+    function triggerImport() {
+        const fileInput = document.getElementById('importFile');
+        if (fileInput) fileInput.click();
+    }
+
+    function importBackup(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const importedData = JSON.parse(e.target.result);
+                if (Array.isArray(importedData)) {
+                    panelsData = importedData;
+                    saveWorkspace();
+                    renderWorkspace();
+                    alert('Workspace restored successfully!');
+                } else {
+                    alert('Invalid backup structure.');
+                }
+            } catch (err) {
+                alert('Failed to parse JSON file.');
+            }
+            event.target.value = '';
+        };
+        reader.readAsText(file);
+    }
+
+    function changeLayoutGrid() {
+        const grid = document.getElementById('workspaceGrid');
+        const selector = document.getElementById('layoutSelector');
+        if (!grid || !selector) return;
+        grid.className = `workspace-grid layout-grid-${selector.value}`;
+    }
+
+    // Safe Initialization binding via DOMContentLoaded / window.onload
+    window.addEventListener('DOMContentLoaded', function() {
+        loadSavedWorkspace();
+        renderWorkspace();
+
+        const addBtn = document.getElementById('addPanelBtn');
+        if (addBtn) {
+            addBtn.addEventListener('click', addCustomPanel);
+    
