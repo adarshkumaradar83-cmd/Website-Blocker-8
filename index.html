@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ConnectFlow - Lightweight Web Messenger</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Custom scrollbar styling for modern UI look */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="h-full bg-slate-900 text-slate-100 font-sans antialiased overflow-hidden">
+
+    <!-- Root App Container -->
+    <div id="app" class="h-full w-full flex flex-col">
+        
+        <!-- ==================== AUTH VIEW ==================== -->
+        <div id="auth-view" class="flex-1 flex items-center justify-center p-4 bg-gradient-to-br from-indigo-950 via-slate-900 to-slate-950">
+            <div class="w-full max-w-md bg-slate-800/80 backdrop-blur-md border border-slate-700/50 rounded-2xl shadow-2xl p-8 space-y-6">
+                <div class="text-center space-y-2">
+                    <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-indigo-600 text-white text-2xl shadow-lg shadow-indigo-600/30">
+                        <i class="fa-solid fa-bolt"></i>
+                    </div>
+                    <h1 class="text-2xl font-bold tracking-tight text-white">ConnectFlow</h1>
+                    <p class="text-sm text-slate-400">Lightweight & High-Performance Messenger</p>
+                </div>
+
+                <form id="login-form" class="space-y-4">
+                    <!-- Phone & Country Code -->
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Phone Number</label>
+                        <div class="flex gap-2">
+                            <select id="country-code" class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-200">
+                                <option value="+91">+91 (IN)</option>
+                                <option value="+1">+1 (US)</option>
+                                <option value="+44">+44 (UK)</option>
+                                <option value="+61">+61 (AU)</option>
+                                <option value="+971">+971 (AE)</option>
+                            </select>
+                            <input type="tel" id="phone-number" required placeholder="98765 43210" class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-200 placeholder-slate-500">
+                        </div>
+                    </div>
+
+                    <!-- Password -->
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Password</label>
+                        <input type="password" id="password" required placeholder="••••••••" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-200 placeholder-slate-500">
+                    </div>
+
+                    <!-- Captcha Simulation -->
+                    <div class="bg-slate-900/60 border border-slate-700/60 rounded-xl p-3 flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <input type="checkbox" id="captcha-check" required class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 bg-slate-900 border-slate-700">
+                            <label for="captcha-check" class="text-sm text-slate-300 select-none">I am not a robot</label>
+                        </div>
+                        <div class="text-xs font-mono bg-indigo-950/80 text-indigo-300 border border-indigo-800/50 px-2.5 py-1 rounded-lg">
+                            CF-8921
+                        </div>
+                    </div>
+
+                    <!-- Terms & Conditions Agreement -->
+                    <div class="flex items-start gap-3 pt-1">
+                        <input type="checkbox" id="terms-check" required class="mt-0.5 w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 bg-slate-900 border-slate-700">
+                        <label for="terms-check" class="text-xs text-slate-400 leading-relaxed">
+                            I agree to the <span class="text-indigo-400 underline cursor-pointer" onclick="openModal('terms-modal')">Terms & Conditions</span> and Privacy Policy.
+                        </label>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button type="submit" class="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl shadow-lg shadow-indigo-600/30 transition-all duration-200 text-sm">
+                        Start Messaging
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- ==================== CHAT VIEW ==================== -->
+        <div id="chat-view" class="hidden flex-1 flex h-full overflow-hidden">
+            
+            <!-- Sidebar / Contacts List -->
+            <div class="w-80 bg-slate-800/90 border-r border-slate-700/60 flex flex-col h-full">
+                <!-- User Profile Header -->
+                <div class="p-4 border-b border-slate-700/60 flex items-center justify-between">
+                    <div class="flex items-center gap-3 cursor-pointer" onclick="openModal('profile-modal')">
+                        <div class="relative">
+                            <img id="sidebar-avatar" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop&crop=faces" alt="Avatar" class="w-10 h-10 rounded-full object-cover border border-indigo-500/50">
+                            <span class="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-slate-800 rounded-full"></span>
+                        </div>
+                        <div>
+                            <h2 id="sidebar-display-name" class="text-sm font-bold text-white truncate max-w-[120px]">Alex Rivera</h2>
+                            <p class="text-xs text-emerald-400 font-medium">Online</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-1 text-slate-400">
+                        <button onclick="openModal('support-modal')" title="Support & Donation" class="p-2 hover:bg-slate-700 rounded-lg text-slate-300 transition-colors">
+                            <i class="fa-solid fa-heart text-rose-400"></i>
+                        </button>
+                        <button onclick="logout()" title="Logout" class="p-2 hover:bg-slate-700 rounded-lg text-slate-300 transition-colors">
+                            <i class="fa-solid fa-right-from-bracket"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Search Conversations -->
+                <div class="p-3">
+                    <div class="relative">
+                        <i class="fa-solid fa-search absolute left-3.5 top-3 text-xs text-slate-500"></i>
+                        <input type="text" placeholder="Search conversations..." class="w-full bg-slate-900 border border-slate-700/80 rounded-xl pl-9 pr-4 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                    </div>
+                </div>
+
+                <!-- Conversations List -->
+                <div id="contacts-list" class="flex-1 overflow-y-auto px-2 space-y-1">
+                    <!-- Dynamic contact items generated in JS -->
+                </div>
+
+                <!-- Footer branding -->
+                <div class="p-3 border-t border-slate-700/50 text-center">
+                    <span class="text-[10px] tracking-widest text-slate-500 uppercase font-semibold">ConnectFlow v1.0.4 P2P</span>
+                </div>
+            </div>
+
+            <!-- Active Chat Window -->
+            <div class="flex-1 flex flex-col h-full bg-slate-900">
+                <!-- Chat Header -->
+                <div class="h-16 px-6 bg-slate-800/80 border-b border-slate-700/60 flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <img id="active-chat-avatar" src="" alt="" class="w-10 h-10 rounded-full object-cover border border-slate-700">
+                        <div>
+                            <h3 id="active-chat-name" class="text-sm font-bold text-white">Select a chat</h3>
+                            <p id="active-chat-status" class="text-xs text-slate-400">Click a contact to start chatting</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button onclick="startVoiceCall()" class="p-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl text-indigo-400 hover:text-indigo-300 transition-colors shadow-sm" title="Start Voice Call">
+                            <i class="fa-solid fa-phone"></i>
+                        </button>
+                        <button onclick="openModal('support-modal')" class="p-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl text-rose-400 hover:text-rose-300 transition-colors shadow-sm" title="Donate & Support">
+                            <i class="fa-solid fa-hand-holding-heart"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Messages Container -->
+                <div id="messages-container" class="flex-1 overflow-y-auto p-6 space-y-4">
+                    <!-- Default State -->
+                    <div class="h-full flex flex-col items-center justify-center text-center text-slate-500 space-y-2">
+                        <div class="w-16 h-16 rounded-full bg-slate-800/80 border border-slate-700 flex items-center justify-center text-indigo-400 text-xl shadow-inner">
+                            <i class="fa-solid fa-comments"></i>
+                        </div>
+                        <p class="text-sm font-medium text-slate-400">Your messages are secured with P2P relay</p>
+                        <p class="text-xs text-slate-500 max-w-xs">Pick a conversation from the sidebar to begin exchanging messages, media, or voice notes.</p>
+                    </div>
+                </div>
+
+                <!-- Media Preview Banner -->
+                <div id="media-preview-container" class="hidden px-4 py-2 bg-slate-800/90 border-t border-slate-700 flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div id="media-preview-thumb" class="w-12 h-12 bg-slate-900 rounded-lg overflow-hidden flex items-center justify-center border border-slate-700">
+                            <!-- Thumbnail / Icon -->
+                        </div>
+                        <div>
+                            <p id="media-preview-name" class="text-xs font-bold text-white truncate max-w-xs">file.png</p>
+                            <p class="text-[10px] text-indigo-400">Ready to send</p>
+                        </div>
+                    </div>
+                    <button onclick="clearMediaPreview()" class="text-slate-400 hover:text-white p-1">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+
+                <!-- Input Footer Area -->
+                <div class="p-4 bg-slate-800/80 border-t border-slate-700/60 relative">
+                    <!-- Emoji Picker Popup -->
+                    <div id="emoji-picker" class="hidden absolute bottom-20 left-4 bg-slate-900 border border-slate-700 rounded-2xl p-3 shadow-2xl grid grid-cols-6 gap-2 z-30 w-64">
+                        <!-- Populated via script -->
+                    </div>
+
+                    <form id="chat-form" onsubmit="handleSendMessage(event)" class="flex items-center gap-2">
+                        <!-- Emoji Button -->
+                        <button type="button" onclick="toggleEmojiPicker()" class="p-2.5 text-slate-400 hover:text-slate-200 hover:bg-slate-700/50 rounded-xl transition-colors">
+                            <i class="fa-regular fa-face-smile text-lg"></i>
+                        </button>
+
+                        <!-- File Upload Button (Images, Videos, PDFs) -->
+                        <label class="p-2.5 text-slate-400 hover:text-slate-200 hover:bg-slate-700/50 rounded-xl transition-colors cursor-pointer" title="Attach Image, Video or PDF">
+                            <i class="fa-solid fa-paperclip text-lg"></i>
+                            <input type="file" id="file-input" accept="image/*,video/*,application/pdf" class="hidden" onchange="handleFileSelect(event)">
+                        </label>
+
+                        <!-- Text Input -->
+                        <input type="text" id="message-input" autocomplete="off" placeholder="Type a message..." class="flex-1 bg-slate-900 border border-slate-700/80 rounded-xl px-4 py-3 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+
+                        <!-- Voice Note Mic Button -->
+                        <button type="button" id="mic-btn" onclick="toggleVoiceRecording()" class="p-2.5 text-slate-400 hover:text-indigo-400 hover:bg-slate-700/50 rounded-xl transition-colors" title="Record Voice Note">
+                            <i class="fa-solid fa-microphone text-lg"></i>
+                        </button>
+
+                        <!-- Send Button -->
+                        <button type="submit" class="p-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl shadow-md shadow-indigo-600/30 transition-all">
+                            <i class="fa-solid fa-paper-plane text-sm"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== MODALS ==================== -->
+
+    <!-- Terms & Privacy Modal -->
+    <div id="terms-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-700 w-full max-w-lg rounded-2xl shadow-2xl p-6 space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 class="text-lg font-bold text-white">Terms & Conditions</h3>
+                <button onclick="closeModal('terms-modal')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="max-h-60 overflow-y-auto text-xs text-slate-300 space-y-3 leading-relaxed pr-2">
+                <p>Welcome to ConnectFlow. By using our lightweight web messenger, you agree to abide by these terms of service and acceptable usage guidelines.</p>
+                <p>1. **Account Security:** You are responsible for maintaining the confidentiality of your account credentials stored locally on your device.</p>
+                <p>2. **P2P Communication:** Messages and media shared are transmitted through optimized pathways. We prioritize your privacy and do not store plain-text archives on central servers.</p>
+                <p>3. **Acceptable Conduct:** Harassment, spamming, or distribution of illicit material through ConnectFlow is strictly prohibited.</p>
+            </div>
+            <div class="pt-2 flex justify-end">
+                <button onclick="closeModal('terms-modal')" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-xl">I Understand</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Profile Edit Modal -->
+    <div id="profile-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-700 w-full max-w-sm rounded-2xl shadow-2xl p-6 space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 class="text-lg font-bold text-white">User Profile</h3>
+                <button onclick="closeModal('profile-modal')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="space-y-4">
+                <div class="flex flex-col items-center space-y-2">
+                    <img id="modal-avatar-preview" src="" class="w-20 h-20 rounded-full object-cover border-2 border-indigo-500 shadow-lg">
+                    <label class="text-xs text-indigo-400 hover:underline cursor-pointer">
+                        Change Photo URL
+                        <input type="text" id="avatar-url-input" placeholder="Paste image link" class="mt-1 w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-200 focus:outline-none" oninput="updateAvatarPreview(this.value)">
+                    </label>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Display Name</label>
+                    <input type="text" id="profile-name-input" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Online Status</label>
+                    <select id="profile-status-select" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none">
+                        <option value="Online">Online</option>
+                        <option value="Busy">Busy</option>
+                        <option value="Away">Away</option>
+                        <option value="Offline">Offline</option>
+                    </select>
+                </div>
+            </div>
+            <div class="pt-2 flex justify-end gap-2">
+                <button onclick="closeModal('profile-modal')" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl">Cancel</button>
+                <button onclick="saveProfile()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-xl">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Customer Support & Donation Modal -->
+    <div id="support-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-700 w-full max-w-md rounded-2xl shadow-2xl p-6 space-y-5">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-lg bg-rose-500/20 text-rose-400 flex items-center justify-center">
+                        <i class="fa-solid fa-heart"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-white">Support & Donation</h3>
+                </div>
+                <button onclick="closeModal('support-modal')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <div class="space-y-4 text-sm">
+                <div class="bg-slate-800/60 border border-slate-700/60 rounded-xl p-4 space-y-2">
+                    <div class="flex justify-between items-center">
+                        <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Owner</span>
+                        <span class="text-slate-100 font-bold">ADARSH KUMAR</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Support Email</span>
+                        <a href="mailto:adarshkumar68947@gmail.com" class="text-indigo-400 hover:underline text-xs">adarshkumar68947@gmail.com</a>
+                    </div>
+                </div>
+
+                <div class="bg-indigo-950/40 border border-indigo-800/40 rounded-xl p-4 text-center space-y-2">
+                    <p class="text-xs font-semibold uppercase tracking-wider text-indigo-300">UPI Donation ID</p>
+                    <div class="flex items-center justify-center gap-2 bg-slate-900/80 border border-slate-700 rounded-lg py-2 px-3">
+                        <span id="upi-id-text" class="font-mono text-sm text-indigo-200 font-semibold select-all">Lunakumari@postbank fakes</span>
+                        <button onclick="copyUpiId()" class="text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-2.5 py-1 rounded-md transition-all">Copy</button>
+                    </div>
+                    <p class="text-[11px] text-slate-400 pt-1">Support open-source development and feature updates!</p>
+                </div>
+            </div>
+
+            <div class="pt-2 flex justify-end">
+                <button onclick="closeModal('support-modal')" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-xl">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- WebRTC Voice Call Overlay -->
+    <div id="call-overlay" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 hidden flex flex-col items-center justify-center p-6 space-y-8 animate-fade-in">
+        <div class="text-center space-y-3">
+            <div class="relative inline-block">
+                <img id="call-avatar" src="" alt="" class="w-28 h-28 rounded-full object-cover border-4 border-indigo-500 shadow-2xl animate-pulse">
+                <span class="absolute bottom-1 right-1 w-5 h-5 bg-emerald-500 border-4 border-slate-900 rounded-full"></span>
+            </div>
+            <h2 id="call-name" class="text-2xl font-bold text-white tracking-tight">Calling...</h2>
+            <p id="call-status" class="text-sm font-medium text-indigo-400">Secure P2P Voice Stream Active</p>
+            <div id="call-timer" class="font-mono text-xs text-slate-400 bg-slate-900/80 border border-slate-800 px-3 py-1 rounded-full inline-block">00:00</div>
+        </div>
+
+        <div class="flex items-center gap-6 pt-6">
+            <button onclick="toggleMuteCall()" id="mute-btn" class="w-14 h-14 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-200 flex items-center justify-center text-lg shadow-lg border border-slate-700 transition-transform hover:scale-105" title="Mute Mic">
+                <i class="fa-solid fa-microphone"></i>
+            </button>
+            <button onclick="endVoiceCall()" class="w-16 h-16 rounded-full bg-rose-600 hover:bg-rose-500 text-white flex items-center justify-center text-xl shadow-xl shadow-rose-600/40 transition-transform hover:scale-105" title="End Call">
+                <i class="fa-solid fa-phone-slash"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- ==================== APPLICATION SCRIPT ==================== -->
+    <script>
+        // App State & Mock Data
+        let currentUser = JSON.parse(localStorage.getItem('connectflow_user')) || null;
+        let activeContactId = null;
+        let pendingMedia = null; // Stores file object before sending
+        let isRecording = false;
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let callInterval = null;
+        let callSeconds = 0;
+        let isMuted = false;
+
+        const contacts = [
+            { id: '1', name: 'Sophia Sterling', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop&crop=faces', status: 'Online', lastMsg: 'See you on the call!', time: '10:42 AM' },
+            { id: '2', name: 'Liam Vance', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=faces', status: 'Away', lastMsg: 'PDF document received.', time: 'Yesterday' },
+            { id: '3', name: 'Elena Rostova', avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=100&h=100&fit=crop&crop=faces', status: 'Online', lastMsg: 'Voice note (0:14)', time: 'Yesterday' },
+            { id: '4', name: 'Marcus Chen', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop&crop=faces', status: 'Offline', lastMsg: 'Thanks for the update.', time: '2 days ago' }
+        ];
+
+        // Simulated chat histories keyed by contact ID
+        const chatStore = {
+            '1': [
+                { sender: 'them', type: 'text', content: 'Hey Adarsh! Ready to review the new build?', time: '10:38 AM' },
+                { sender: 'me', type: 'text', content: 'Yes, everything is running smoothly on ConnectFlow.', time: '10:40 AM' },
+                { sender: 'them', type: 'text', content: 'See you on the call!', time: '10:42 AM' }
+            ],
+            '2': [
+                { sender: 'me', type: 'text', content: 'Check this specification sheet.', time: 'Yesterday' },
+                { sender: 'them', type: 'text', content: 'PDF document received.', time: 'Yesterday' }
+            ],
+            '3': [
+                { sender: 'them', type: 'voice', content: 'Voice Note 0:14', time: 'Yesterday' }
+            ],
+            '4': [
+                { sender: 'them', type: 'text', content: 'Thanks for the update.', time: '2 days ago' }
+            ]
+        };
+
+        const emojis = ['😊', '😂', '🔥', '👍', '❤️', '🎉', '🚀', '🙌', '💡', '✨', '☕', '💻', '🎯', '🙏', '💯', '⭐'];
+
+        // Initialization
+        window.addEventListener('DOMContentLoaded', () => {
+            initEmojis();
+            if (currentUser) {
+                showChatView();
+            } else {
+                showAuthView();
+            }
+
+            // Login Form Handler
+            document.getElementById('login-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                const phone = document.getElementById('phone-number').value;
+                const country = document.getElementById('country-code').value;
+                const name = "Alex Rivera"; // Default display name
+                
+                currentUser = {
+                    phone: `${country} ${phone}`,
+                    name: name,
+                    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop&crop=faces',
+                    status: 'Online'
+                };
+
+                localStorage.setItem('connectflow_user', JSON.stringify(currentUser));
+                showChatView();
+            });
+        });
+
+        function showAuthView() {
+            document.getElementById('auth-view').classList.remove('hidden');
+            document.getElementById('chat-view').classList.add('hidden');
+        }
+
+        function showChatView() {
+            document.getElementById('auth-view').classList.add('hidden');
+            document.getElementById('chat-view').classList.remove('hidden');
+            
+            // Populate profile info
+            document.getElementById('sidebar-display-name').innerText = currentUser.name;
+            document.getElementById('sidebar-avatar').src = currentUser.avatar;
+            document.getElementById('profile-name-input').value = currentUser.name;
+            document.getElementById('avatar-url-input').value = currentUser.avatar;
+            document.getElementById('modal-avatar-preview').src = currentUser.avatar;
+
+            renderContacts();
+            if (contacts.length > 0) {
+                selectContact(contacts[0].id);
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('connectflow_user');
+            currentUser = null;
+            showAuthView();
+        }
+
+        // Render Sidebar Contacts
+        function renderContacts() {
+            const listEl = document.getElementById('contacts-list');
+            listEl.innerHTML = '';
+
+            contacts.forEach(contact => {
+                const isActive = activeContactId === contact.id;
+                const div = document.createElement('div');
+                div.className = `flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all ${isActive ? 'bg-indigo-600/20 border border-indigo-500/30 text-white' : 'hover:bg-slate-800 text-slate-300'}`;
+                div.onclick = () => selectContact(contact.id);
+                div.innerHTML = `
+                    <div class="relative flex-shrink-0">
+                        <img src="${contact.avatar}" class="w-11 h-11 rounded-full object-cover border border-slate-700">
+                        <span class="absolute bottom-0 right-0 w-3 h-3 ${contact.status === 'Online' ? 'bg-emerald-500' : contact.status === 'Away' ? 'bg-amber-500' : 'bg-slate-500'} border-2 border-slate-900 rounded-full"></span>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center justify-between">
+                            <h4 class="text-xs font-bold truncate">${contact.name}</h4>
+                            <span class="text-[10px] text-slate-500">${contact.time}</span>
+                        </div>
+                        <p class="text-xs text-slate-400 truncate mt-0.5">${contact.lastMsg}</p>
+                    </div>
+                `;
+                listEl.appendChild(div);
+            });
+        }
+
+        // Select Active Contact
+        function selectContact(contactId) {
+            activeContactId = contactId;
+            renderContacts();
+
+            const contact = contacts.find(c => c.id === contactId);
+            document.getElementById('active-chat-name').innerText = contact.name;
+            document.getElementById('active-chat-avatar').src = contact.avatar;
+            document.getElementById('active-chat-status').innerText = contact.status;
+
+            renderMessages();
+        }
+
+        // Render Messages in Active Chat
+        function renderMessages() {
+            const container = document.getElementById('messages-container');
+            container.innerHTML = '';
+
+            const messages = chatStore[activeContactId] || [];
+            if (messages.length === 0) {
+                container.innerHTML = `<div class="h-full flex items-center justify-center text-xs text-slate-500">No messages yet. Send a greeting!</div>`;
+                return;
+            }
+
+            messages.forEach(msg => {
+                const isMe = msg.sender === 'me';
+                const wrapper = document.createElement('div');
+                wrapper.className = `flex ${isMe ? 'justify-end' : 'justify-start'} mb-3`;
+
+                let contentHtml = '';
+                if (msg.type === 'text') {
+                    contentHtml = `<p class="text-sm leading-relaxed">${escapeHtml(msg.content)}</p>`;
+                } else if (msg.type === 'image') {
+                    contentHtml = `<img src="${msg.content}" class="max-w-xs rounded-xl border border-slate-700 object-cover mb-1">`;
+                } else if (msg.type === 'video') {
+                    contentHtml = `<video src="${msg.content}" controls class="max-w-xs rounded-xl border border-slate-700 mb-1"></video>`;
+                } else if (msg.type === 'pdf') {
+                    contentHtml = `
+                        <div class="flex items-center gap-3 bg-slate-800/90 border border-slate-700 p-3 rounded-xl max-w-xs">
+                            <i class="fa-solid fa-file-pdf text-rose-500 text-2xl"></i>
+                            <div class="overflow-hidden">
+                                <p class="text-xs font-bold text-white truncate">${msg.fileName || 'Document.pdf'}</p>
+                                <span class="text-[10px] text-slate-400">PDF Document</span>
+                            </div>
+                        </div>`;
+                } else if (msg.type === 'voice') {
+                    contentHtml = `
+                        <div class="flex items-center gap-3 bg-slate-800/90 border border-slate-700 p-2.5 rounded-xl min-w-[200px]">
+                            <button onclick="playVoiceNote(this)" class="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs"><i class="fa-solid fa-play"></i></button>
+                            <div class="flex-1">
+                                <div class="h-1.5 bg-slate-700 rounded-full overflow-hidden">
+                                    <div class="w-1/2 h-full bg-indigo-400 rounded-full"></div>
+                                </div>
+                                <span class="text-[10px] text-slate-400 mt-1 block">Voice Note (0:12)</span>
+                            </div>
+                        </div>`;
+                }
+
+                wrapper.innerHTML = `
+                    <div class="max-w-md ${isMe ? 'bg-indigo-600 text-white rounded-2xl rounded-tr-none' : 'bg-slate-800 text-slate-200 border border-slate-700/60 rounded-2xl rounded-tl-none'} px-4 py-3 shadow-sm">
+                        ${contentHtml}
+                        <span class="text-[10px] ${isMe ? 'text-indigo-200' : 'text-slate-400'} block text-right mt-1">${msg.time}</span>
+                    </div>
+                `;
+                container.appendChild(wrapper);
+            });
+
+            container.scrollTop = container.scrollHeight;
+        }
+
+        // Handle Sending Messages
+        function handleSendMessage(e) {
+            e.preventDefault();
+            const input = document.getElementById('message-input');
+            const text = input.value.trim();
+
+            if (!text && !pendingMedia) return;
+
+            if (!chatStore[activeContactId]) {
+                chatStore[activeContactId] = [];
+            }
+
+            const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+            // Send pending media if attached
+            if (pendingMedia) {
+                chatStore[activeContactId].push({
+                    sender: 'me',
+                    type: pendingMedia.type,
+                    content: pendingMedia.url,
+                    fileName: pendingMedia.name,
+                    time: timeStr
+                });
+                clearMediaPreview();
+            }
+
+            // Send text if present
+            if (text) {
+                chatStore[activeContactId].push({
+                    sender: 'me',
+                    type: 'text',
+                    content: text,
+                    time: timeStr
+                });
+                input.value = '';
+            }
+
+            // Update contact snippet
+            const contact = contacts.find(c => c.id === activeContactId);
+            contact.lastMsg = text || 'Sent media attachment';
+            contact.time = timeStr;
+
+            renderMessages();
+            renderContacts();
+        }
+
+        // File Selection handling
+        function handleFileSelect(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                let fileType = 'image';
+                if (file.type.startsWith('video/')) fileType = 'video';
+                else if (file.type === 'application/pdf') fileType = 'pdf';
+
+                pendingMedia = {
+                    type: fileType,
+                    url: event.target.result,
+                    name: file.name
+                };
+
+                // Show Preview Banner
+                const container = document.getElementById('media-preview-container');
+                const thumb = document.getElementById('media-preview-thumb');
+                document.getElementById('media-preview-name').innerText = file.name;
+                container.classList.remove('hidden');
+
+                if (fileType === 'image') {
+                    thumb.innerHTML = `<img src="${event.target.result}" class="w-full h-full object-cover">`;
+                } else if (fileType === 'video') {
+                    thumb.innerHTML = `<i class="fa-solid fa-video text-indigo-400"></i>`;
+                } else {
+                    thumb.innerHTML = `<i class="fa-solid fa-file-pdf text-rose-500 text-lg"></i>`;
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function clearMediaPreview() {
+            pendingMedia = null;
+            document.getElementById('media-preview-container').classList.add('hidden');
+            document.getElementById('file-input').value = '';
+        }
+
+        // Emoji Picker Utilities
+        function initEmojis() {
+            const picker = document.getElementById('emoji-picker');
+            emojis.forEach(emoji => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'text-xl hover:bg-slate-800 p-1.5 rounded-lg transition-colors';
+                btn.innerText = emoji;
+                btn.onclick = () => {
+                    document.getElementById('message-input').value += emoji;
+                    toggleEmojiPicker();
+                };
+                picker.appendChild(btn);
+            });
+        }
+
+        function toggleEmojiPicker() {
+            const picker = document.getElementById('emoji-picker');
+            picker.classList.toggle('hidden');
+        }
+
+        // Voice Note Recording Simulation
+        async function toggleVoiceRecording() {
+            const micBtn = document.getElementById('mic-btn');
+            if (!isRecording) {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    mediaRecorder = new MediaRecorder(stream);
+                    audioChunks = [];
+                    mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+                    mediaRecorder.onstop = () => {
+                        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                        const audioUrl = URL.createObjectURL(audioBlob);
+                        
+                        if (!chatStore[activeContactId]) chatStore[activeContactId] = [];
+                        const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                        chatStore[activeContactId].push({
+                            sender: 'me',
+                            type: 'voice',
+                            content: audioUrl,
+                            time: timeStr
+                        });
+                        renderMessages();
+                    };
+                    mediaRecorder.start();
+                    isRecording = true;
+                    micBtn.classList.add('text-rose-500', 'animate-pulse');
+                } catch (err) {
+                    // Fallback simulation if microphone permissions are denied
+                    isRecording = true;
+                    micBtn.classList.add('text-rose-500', 'animate-pulse');
+                }
+            } else {
+                if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                    mediaRecorder.stop();
+                    mediaRecorder.stream.getTracks().forEach(track => track.stop());
+                } else {
+                    // Simulated voice note drop
+                    if (!chatStore[activeContactId]) chatStore[activeContactId] = [];
+                    const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    chatStore[activeContactId].push({
+                        sender: 'me',
+                        type: 'voice',
+                        content: 'Voice Note',
+                        time: timeStr
+                    });
+                    renderMessages();
+                }
+                isRecording = false;
+                micBtn.classList.remove('text-rose-500', 'animate-pulse');
+            }
+        }
+
+        function playVoiceNote(btn) {
+            const icon = btn.querySelector('i');
+            if (icon.classList.contains('fa-play')) {
+                icon.classList.remove('fa-play');
+                icon.classList.add('fa-pause');
+                setTimeout(() => {
+                    icon.classList.remove('fa-pause');
+                    icon.classList.add('fa-play');
+                }, 3000);
+            } else {
+                icon.classList.remove('fa-pause');
+                icon.classList.add('fa-play');
+            }
+        }
+
+        // WebRTC Voice Call Simulation
+        function startVoiceCall() {
+            const contact = contacts.find(c => c.id === activeContactId);
+            document.getElementById('call-name').innerText = contact.name;
+            document.getElementById('call-avatar').src = contact.avatar;
+            document.getElementById('call-overlay').classList.remove('hidden');
+
+            callSeconds = 0;
+            callInterval = setInterval(() => {
+                callSeconds++;
+                const mins = String(Math.floor(callSeconds / 60)).padStart(2, '0');
+                const secs = String(callSeconds % 60).padStart(2, '0');
+                document.getElementById('call-timer').innerText = `${mins}:${secs}`;
+            }, 1000);
+        }
+
+        function endVoiceCall() {
+            clearInterval(callInterval);
+            document.getElementById('call-overlay').classList.add('hidden');
+        }
+
+        function toggleMuteCall() {
+            isMuted = !isMuted;
+            const btn = document.getElementById('mute-btn');
+            if (isMuted) {
+                btn.classList.add('bg-rose-600', 'text-white');
+                btn.classList.remove('bg-slate-800', 'text-slate-200');
+            } else {
+                btn.classList.remove('bg-rose-600', 'text-white');
+                btn.classList.add('bg-slate-800', 'text-slate-200');
+            }
+        }
+
+        // Modal Helpers
+        function openModal(modalId) {
+            document.getElementById(modalId).classList.remove('hidden');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+        }
+
+        function updateAvatarPreview(url) {
+            if (url.trim()) {
+                document.getElementById('modal-avatar-preview').src = url;
+            }
+        }
+
+        function saveProfile() {
+            const newName = document.getElementById('profile-name-input').value.trim();
+            const newAvatar = document.getElementById('avatar-url-input').value.trim();
+            const newStatus = document.getElementById('profile-status-select').value;
+
+            if (newName) currentUser.name = newName;
+            if (newAvatar) currentUser.avatar = newAvatar;
+            currentUser.status = newStatus;
+
+            localStorage.setItem('connectflow_user', JSON.stringify(currentUser));
+            showChatView();
+            closeModal('profile-modal');
+        }
+
+        function copyUpiId() {
+            const upiText = document.getElementById('upi-id-text').innerText;
+            navigator.clipboard.writeText(upiText);
+            alert('UPI ID copied to clipboard: ' + upiText);
+        }
+
+        function escapeHtml(text) {
+            const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+            return text.replace(/[&<>"']/g, m => map[m]);
+        }
+    </script>
+</body>
+</html>
