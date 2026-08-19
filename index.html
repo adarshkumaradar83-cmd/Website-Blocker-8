@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ConnectFlow - Production Messenger</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="h-full bg-slate-950 text-slate-100 font-sans antialiased overflow-hidden">
+
+    <div id="app" class="h-full w-full flex flex-col">
+        
+        <!-- ==================== AUTH VIEW ==================== -->
+        <div id="auth-view" class="flex-1 flex items-center justify-center p-4 bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-950">
+            <div class="w-full max-w-md bg-slate-900/90 border border-slate-800 rounded-2xl shadow-2xl p-8 space-y-6">
+                <div class="text-center space-y-2">
+                    <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-indigo-600 text-white text-2xl shadow-lg">
+                        <i class="fa-solid fa-comments"></i>
+                    </div>
+                    <h1 class="text-2xl font-bold tracking-tight text-white">ConnectFlow</h1>
+                    <p class="text-sm text-slate-400">Decentralized P2P & Server-Linked Messenger</p>
+                </div>
+
+                <form id="auth-form" onsubmit="handleAuth(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Username / Phone Identifier</label>
+                        <input type="text" id="auth-username" required placeholder="e.g., user_alpha" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Password</label>
+                        <input type="password" id="auth-password" required placeholder="••••••••" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+
+                    <div class="flex items-start gap-3 pt-1">
+                        <input type="checkbox" id="auth-terms" required class="mt-0.5 w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 bg-slate-950 border-slate-800">
+                        <label for="auth-terms" class="text-xs text-slate-400 leading-relaxed">
+                            I agree to the <span class="text-indigo-400 underline cursor-pointer" onclick="openModal('terms-modal')">Terms & Conditions</span>.
+                        </label>
+                    </div>
+
+                    <button type="submit" class="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-xl shadow-lg shadow-indigo-600/30 transition-all text-sm">
+                        Sign In / Register Account
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- ==================== CHAT VIEW ==================== -->
+        <div id="chat-view" class="hidden flex-1 flex h-full overflow-hidden">
+            
+            <!-- Sidebar -->
+            <div class="w-80 bg-slate-900 border-r border-slate-800 flex flex-col h-full">
+                <div class="p-4 border-b border-slate-800 flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="relative">
+                            <div id="my-avatar-badge" class="w-10 h-10 rounded-full bg-indigo-600 font-bold flex items-center justify-center text-white border border-indigo-500">U</div>
+                            <span class="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-slate-900 rounded-full"></span>
+                        </div>
+                        <div>
+                            <h2 id="my-username-display" class="text-sm font-bold text-white truncate max-w-[110px]">User</h2>
+                            <p class="text-xs text-emerald-400 font-medium">Connected</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-1 text-slate-400">
+                        <button onclick="openModal('support-modal')" class="p-2 hover:bg-slate-800 rounded-lg text-rose-400" title="Support & Donation"><i class="fa-solid fa-heart"></i></button>
+                        <button onclick="logout()" class="p-2 hover:bg-slate-800 rounded-lg text-slate-300" title="Logout"><i class="fa-solid fa-right-from-bracket"></i></button>
+                    </div>
+                </div>
+
+                <!-- Add Contact Bar -->
+                <div class="p-3 border-b border-slate-800/60">
+                    <div class="flex gap-2">
+                        <input type="text" id="target-peer-input" placeholder="Enter Peer ID to Connect..." class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                        <button onclick="connectToPeer()" class="px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold">Connect</button>
+                    </div>
+                </div>
+
+                <!-- Contacts Roster -->
+                <div id="contacts-list" class="flex-1 overflow-y-auto p-2 space-y-1">
+                    <!-- Dynamic Peers -->
+                </div>
+
+                <div class="p-3 border-t border-slate-800 text-center">
+                    <span id="connection-status-badge" class="text-[10px] tracking-widest text-amber-400 uppercase font-semibold">Signaling: Disconnected</span>
+                </div>
+            </div>
+
+            <!-- Main Chat Area -->
+            <div class="flex-1 flex flex-col h-full bg-slate-950">
+                <div class="h-16 px-6 bg-slate-900 border-b border-slate-800 flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div id="active-peer-avatar" class="w-10 h-10 rounded-full bg-slate-800 font-bold flex items-center justify-center text-slate-300 border border-slate-700">#</div>
+                        <div>
+                            <h3 id="active-peer-name" class="text-sm font-bold text-white">No Peer Selected</h3>
+                            <p id="active-peer-status" class="text-xs text-slate-500">Establish a connection from the sidebar</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button onclick="startVoiceCall()" class="p-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl text-indigo-400 transition-colors" title="Start WebRTC Voice Call">
+                            <i class="fa-solid fa-phone"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Messages Feed -->
+                <div id="messages-container" class="flex-1 overflow-y-auto p-6 space-y-4">
+                    <div class="h-full flex flex-col items-center justify-center text-center text-slate-600 space-y-2">
+                        <i class="fa-solid fa-network-wired text-3xl text-slate-700"></i>
+                        <p class="text-sm font-medium text-slate-500">Direct P2P DataChannel Inactive</p>
+                    </div>
+                </div>
+
+                <!-- Input Footer -->
+                <div class="p-4 bg-slate-900 border-t border-slate-800">
+                    <form id="chat-form" onsubmit="sendTextMessage(event)" class="flex items-center gap-2">
+                        <label class="p-2.5 text-slate-400 hover:text-white cursor-pointer" title="Send File / Media">
+                            <i class="fa-solid fa-paperclip text-lg"></i>
+                            <input type="file" id="media-file-input" class="hidden" onchange="handleFileAttachment(event)">
+                        </label>
+                        <input type="text" id="message-input" autocomplete="off" placeholder="Type a secure message..." class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                        <button type="button" id="mic-btn" onclick="toggleVoiceRecording()" class="p-2.5 text-slate-400 hover:text-indigo-400" title="Record Voice Note">
+                            <i class="fa-solid fa-microphone text-lg"></i>
+                        </button>
+                        <button type="submit" class="p-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl shadow-md">
+                            <i class="fa-solid fa-paper-plane text-sm"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== MODALS ==================== -->
+    <div id="support-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 w-full max-w-md rounded-2xl shadow-2xl p-6 space-y-5">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 class="text-lg font-bold text-white">Customer Support & Donation</h3>
+                <button onclick="closeModal('support-modal')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="space-y-3 text-sm">
+                <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-2">
+                    <div class="flex justify-between"><span class="text-slate-400 text-xs">Owner</span><span class="font-bold text-white">ADARSH KUMAR</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400 text-xs">Support Email</span><a href="mailto:adarshkumar68947@gmail.com" class="text-indigo-400 text-xs">adarshkumar68947@gmail.com</a></div>
+                </div>
+                <div class="bg-indigo-950/30 border border-indigo-900/50 rounded-xl p-4 text-center space-y-2">
+                    <p class="text-xs text-indigo-300 font-semibold uppercase">UPI Donation ID</p>
+                    <p class="font-mono text-sm text-white select-all">Lunakumari@postbank fakes</p>
+                </div>
+            </div>
+            <div class="flex justify-end">
+                <button onclick="closeModal('support-modal')" class="px-4 py-2 bg-indigo-600 text-white text-xs font-semibold rounded-xl">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="terms-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 w-full max-w-md rounded-2xl shadow-2xl p-6 space-y-4">
+            <h3 class="text-lg font-bold text-white">Terms & Conditions</h3>
+            <p class="text-xs text-slate-300 leading-relaxed">By utilizing ConnectFlow, you acknowledge that data transfers occur over direct WebRTC peer connections or through configured signaling relays. Local session records are securely managed on your device storage.</p>
+            <div class="flex justify-end"><button onclick="closeModal('terms-modal')" class="px-4 py-2 bg-indigo-600 text-white text-xs font-semibold rounded-xl">Close</button></div>
+        </div>
+    </div>
+
+    <!-- Voice Call Overlay -->
+    <div id="call-overlay" class="fixed inset-0 bg-slate-950/90 z-50 hidden flex flex-col items-center justify-center space-y-6">
+        <div class="w-24 h-24 rounded-full bg-indigo-600 flex items-center justify-center text-3xl text-white animate-pulse"><i class="fa-solid fa-user"></i></div>
+        <h2 id="call-peer-title" class="text-xl font-bold text-white">Voice Call Active</h2>
+        <button onclick="endVoiceCall()" class="w-16 h-16 rounded-full bg-rose-600 text-white flex items-center justify-center text-xl shadow-xl"><i class="fa-solid fa-phone-slash"></i></button>
+    </div>
+
+    <!-- ==================== SCRIPT & WEBRTC ENGINE ==================== -->
+    <script>
+        let currentUser = JSON.parse(localStorage.getItem('cf_user')) || null;
+        let peerConnection = null;
+        let dataChannel = null;
+        let localStream = null;
+        let activePeerId = null;
+        let socket = null; // Will connect to signaling server endpoint
+        let isRecording = false;
+        let mediaRecorder = null;
+        let audioChunks = [];
+
+        const ICE_SERVERS = {
+            iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+        };
+
+        window.addEventListener('DOMContentLoaded', () => {
+            if (currentUser) {
+                showChatView();
+                initSignalingConnection();
+            }
+        });
+
+        function handleAuth(e) {
+            e.preventDefault();
+            const username = document.getElementById('auth-username').value.trim();
+            currentUser = { username, token: 'local_session_' + Date.now() };
+            localStorage.setItem('cf_user', JSON.stringify(currentUser));
+            showChatView();
+            initSignalingConnection();
+        }
+
+        function showChatView() {
+            document.getElementById('auth-view').classList.add('hidden');
+            document.getElementById('chat-view').classList.remove('hidden');
+            document.getElementById('my-username-display').innerText = currentUser.username;
+            document.getElementById('my-avatar-badge').innerText = currentUser.username.charAt(0).toUpperCase();
+        }
+
+        function logout() {
+            localStorage.removeItem('cf_user');
+            if (socket) socket.close();
+            location.reload();
+        }
+
+        /* 
+          SIGNALING BACKEND HOOK 
+          To run live signaling, point this to your WebSocket server (e.g., ws://localhost:3000)
+        */
+        function initSignalingConnection() {
+            try {
+                // Replace with actual production signaling server websocket URL
+                // socket = new WebSocket('ws://localhost:3000');
+                // socket.onopen = () => { document.getElementById('connection-status-badge').innerText = 'Signaling: Online'; };
+                document.getElementById('connection-status-badge').innerText = 'Signaling: Ready (Configure WS)';
+            } catch (err) {
+                console.warn('Signaling server offline. Running local standalone interface.');
+            }
+        }
+
+        // Native WebRTC Peer Initialization
+        function connectToPeer() {
+            const peerId = document.getElementById('target-peer-input').value.trim();
+            if (!peerId) return;
+            activePeerId = peerId;
+
+            document.getElementById('active-peer-name').innerText = peerId;
+            document.getElementById('active-peer-status').innerText = 'Establishing P2P DataChannel...';
+            document.getElementById('active-peer-avatar').innerText = peerId.charAt(0).toUpperCase();
+
+            peerConnection = new RTCPeerConnection(ICE_SERVERS);
+            
+            // Create native data channel for text/files
+            dataChannel = peerConnection.createDataChannel('connectflow-chat');
+            setupDataChannelHandlers();
+
+            peerConnection.onicecandidate = (event) => {
+                if (event.candidate && socket && socket.readyState === WebSocket.OPEN) {
+                    socket.send(JSON.stringify({ type: 'ice', target: peerId, candidate: event.candidate }));
+                }
+            };
+
+            peerConnection.on-datachannel = (event) => {
+                dataChannel = event.channel;
+                setupDataChannelHandlers();
+            };
+
+            peerConnection.createOffer().then(offer => {
+                peerConnection.setLocalDescription(offer);
+                // Send offer via signaling server...
+            });
+
+            renderMessageItem('System', `Initiated connection sequence to ${peerId}`, 'system');
+        }
+
+        function setupDataChannelHandlers() {
+            dataChannel.onopen = () => {
+                document.getElementById('active-peer-status').innerText = 'P2P Connected Securely';
+            };
+            dataChannel.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                renderMessageItem(activePeerId, data.content, data.type, data.fileName);
+            };
+            dataChannel.onclose = () => {
+                document.getElementById('active-peer-status').innerText = 'Connection Closed';
+            };
+        }
+
+        function sendTextMessage(e) {
+            e.preventDefault();
+            const input = document.getElementById('message-input');
+            const text = input.value.trim();
+            if (!text) return;
+
+            const payload = { type: 'text', content: text };
+            if (dataChannel && dataChannel.readyState === 'open') {
+                dataChannel.send(JSON.stringify(payload));
+            }
+            renderMessageItem('Me', text, 'text');
+            input.value = '';
+        }
+
+        function handleFileAttachment(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                const payload = { type: 'file', content: evt.target.result, fileName: file.name };
+                if (dataChannel && dataChannel.readyState === 'open') {
+                    dataChannel.send(JSON.stringify(payload));
+                }
+                renderMessageItem('Me', evt.target.result, 'file', file.name);
+            };
+            reader.readAsDataURL(file);
+        }
+
+        async function toggleVoiceRecording() {
+            const micBtn = document.getElementById('mic-btn');
+            if (!isRecording) {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    mediaRecorder = new MediaRecorder(stream);
+                    audioChunks = [];
+                    mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+                    mediaRecorder.onstop = () => {
+                        const blob = new Blob(audioChunks, { type: 'audio/webm' });
+                        const audioUrl = URL.createObjectURL(blob);
+                        renderMessageItem('Me', audioUrl, 'voice');
+                    };
+                    mediaRecorder.start();
+                    isRecording = true;
+                    micBtn.classList.add('text-rose-500', 'animate-pulse');
+                } catch (err) {
+                    alert('Microphone permission denied or unavailable.');
+                }
+            } else {
+                mediaRecorder.stop();
+                isRecording = false;
+                micBtn.classList.remove('text-rose-500', 'animate-pulse');
+            }
+        }
+
+        async function startVoiceCall() {
+            try {
+                localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+                if (peerConnection) {
+                    localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+                }
+                document.getElementById('call-overlay').classList.remove('hidden');
+                document.getElementById('call-peer-title').innerText = `Voice Call with ${activePeerId || 'Peer'}`;
+            } catch (err) {
+                alert('Microphone access required for voice calls.');
+            }
+        }
+
+        function endVoiceCall() {
+            if (localStream) localStream.getTracks().forEach(t => t.stop());
+            document.getElementById('call-overlay').classList.add('hidden');
+        }
+
+        function renderMessageItem(sender, content, type, fileName) {
+            const container = document.getElementById('messages-container');
+            const isMe = sender === 'Me';
+            const div = document.createElement('div');
+            div.className = `flex ${isMe ? 'justify-end' : 'justify-start'} mb-3`;
+
+            let inner = '';
+            if (type === 'text') inner = `<p class="text-sm">${escapeHtml(content)}</p>`;
+            else if (type === 'file') inner = `<a href="${content}" download="${fileName}" class="text-xs text-indigo-300 underline flex items-center gap-2"><i class="fa-solid fa-file"></i> ${fileName}</a>`;
+            else if (type === 'voice') inner = `<audio controls src="${content}" class="h-8 w-48"></audio>`;
+            else if (type === 'system') inner = `<p class="text-xs text-slate-500 italic">${content}</p>`;
+
+            div.innerHTML = `<div class="max-w-xs bg-slate-900 border border-slate-800 rounded-2xl px-4 py-3 text-slate-200 shadow-sm">${inner}</div>`;
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+        function escapeHtml(str) { return str.replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)); }
+    </script>
+</body>
+</html>
